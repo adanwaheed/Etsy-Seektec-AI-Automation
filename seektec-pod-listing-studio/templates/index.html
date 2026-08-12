@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Seektec AI-assisted Etsy POD title and tag generator for printed and embroidered apparel.">
+  <title>Seektec · Etsy POD Listing Studio</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <div class="bg-orb orb-a"></div><div class="bg-orb orb-b"></div>
+
+  <header class="topbar">
+    <a href="/" class="brand" aria-label="Seektec home">
+      <img src="/static/seektec-logo.png" alt="Seektec logo">
+    </a>
+    <div class="topbar-copy">
+      <span class="status-dot"></span>
+      <span>AI Etsy POD Listing Studio</span>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">SEEKTEC · PRINT ON DEMAND AUTOMATION</p>
+        <h1>Turn Any POD Design Into an <span>Etsy-Ready Listing</span></h1>
+        <p class="hero-copy">Upload your artwork or mockup, choose the garment and decoration method, and Gemini creates a clear Etsy title, 13 search tags, and personalization options when needed.</p>
+        <div class="hero-pills">
+          <span>Printed Designs</span><span>Embroidery</span><span>5 POD Products</span><span>13 Etsy Tags</span>
+        </div>
+      </div>
+      <div class="hero-card" aria-hidden="true">
+        <div class="mini-window">
+          <span></span><span></span><span></span>
+        </div>
+        <div class="mock-title"></div><div class="mock-title short"></div>
+        <div class="mock-tags"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="mock-score">SEO<span>13/13</span></div>
+      </div>
+    </section>
+
+    <section class="studio-grid">
+      <form id="listing-form" class="panel form-panel" enctype="multipart/form-data">
+        <div class="panel-heading">
+          <div><p class="step">STEP 1</p><h2>Product & Design</h2></div>
+          <span class="required">Image required</span>
+        </div>
+
+        <label class="upload-zone" id="upload-zone">
+          <input id="image-input" name="image" type="file" accept="image/jpeg,image/png,image/webp" required>
+          <div class="upload-icon">↑</div>
+          <strong>Drop your product image or design here</strong>
+          <span>JPG, PNG or WebP · large images are compressed automatically for Vercel</span>
+          <img id="local-preview" alt="Selected design preview" hidden>
+          <button type="button" id="remove-image" class="remove-image" hidden>Remove image</button>
+        </label>
+
+        <div class="field-grid">
+          <label class="field">
+            <span>Product Type *</span>
+            <select name="product_type" required>
+              <option value="Sweatshirt">Sweatshirt</option>
+              <option value="T-Shirt">T-Shirt</option>
+              <option value="Hoodie">Hoodie</option>
+              <option value="Cap">Cap</option>
+              <option value="Quarter-Zip Sweatshirt">Quarter-Zip Sweatshirt</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Design Method *</span>
+            <select name="decoration_method" id="decoration-method" required>
+              <option value="Embroidery">Embroidery</option>
+              <option value="Print">Print</option>
+            </select>
+          </label>
+
+          <div class="field">
+            <span>Personalization *</span>
+            <div class="segmented" role="radiogroup" aria-label="Personalization">
+              <label><input type="radio" name="personalization" value="No" checked><span>No</span></label>
+              <label><input type="radio" name="personalization" value="Yes"><span>Yes</span></label>
+            </div>
+          </div>
+
+          <label class="field">
+            <span>Target Audience</span>
+            <input name="target_audience" type="text" placeholder="e.g. teachers, nurses, book lovers, brides">
+          </label>
+
+          <label class="field">
+            <span>Design Placement</span>
+            <select name="placement">
+              <option value="">Let AI infer / not important</option>
+              <option>Center Chest</option>
+              <option>Left Chest</option>
+              <option>Right Chest</option>
+              <option>Pocket Side</option>
+              <option>Front + Sleeve</option>
+              <option>Sleeve</option>
+              <option>Cap Front</option>
+              <option>Cap Side</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Product Color</span>
+            <input name="product_color" type="text" placeholder="e.g. ash, black, navy, pink">
+          </label>
+
+          <label class="field full">
+            <span>Occasion / Theme</span>
+            <input name="occasion_theme" type="text" placeholder="e.g. Halloween, teacher appreciation, wedding, book lover">
+          </label>
+
+          <label class="field full">
+            <span>Extra Confirmed Details</span>
+            <textarea name="notes" rows="3" placeholder="Optional: exact wording, profession, licensed terms, thread/print colors, design meaning, or other facts Gemini should use."></textarea>
+          </label>
+        </div>
+
+        <button id="generate-button" class="generate-button" type="submit">
+          <span class="spark">✦</span><span>Generate Etsy SEO Listing</span><span>→</span>
+        </button>
+
+        <div class="loading" id="loading" hidden>
+          <span class="spinner"></span>
+          <div><strong id="loading-title">Reading your design…</strong><p id="loading-message">Gemini is detecting the design subject, visible text, audience, and search intent.</p></div>
+        </div>
+        <div class="error-box" id="error-box" hidden></div>
+      </form>
+
+      <aside class="panel info-panel">
+        <p class="step">SEEKTEC WORKFLOW</p>
+        <h2>Built for your POD catalog</h2>
+        <div class="workflow-list">
+          <div><b>01</b><span><strong>Upload</strong><small>Artwork, mockup, print design, or embroidery design</small></span></div>
+          <div><b>02</b><span><strong>Define</strong><small>Garment, print/embroidery, audience, placement, personalization</small></span></div>
+          <div><b>03</b><span><strong>Analyze</strong><small>Gemini reads the design subject, text, theme, and buyer intent</small></span></div>
+          <div><b>04</b><span><strong>Generate</strong><small>Clear title + 13 varied Etsy tags + optional personalization</small></span></div>
+        </div>
+        <div class="supported-box"><strong>Supported products</strong><p>Sweatshirts · T-Shirts · Hoodies · Caps · Quarter-Zip Sweatshirts</p></div>
+        <p class="small-note">SEO suggestions improve relevance and clarity but cannot guarantee Etsy ranking or sales.</p>
+      </aside>
+    </section>
+
+    <section id="results" class="results" hidden>
+      <div class="results-heading">
+        <div><p class="eyebrow">STEP 2 · GENERATED LISTING</p><h2>Your Seektec Etsy SEO Output</h2></div>
+        <div class="score-pill" id="score-pill">SEO <strong id="score-value">100</strong></div>
+      </div>
+
+      <div class="result-grid">
+        <article class="result-card title-card">
+          <div class="card-heading"><div><span>01</span><h3>SEO Optimized Title</h3></div><button class="copy-btn" data-copy="title-output">Copy</button></div>
+          <p id="title-output" class="title-output"></p>
+          <div class="meta-row"><span>Clear product phrase first</span><b id="title-count">0/140</b></div>
+        </article>
+
+        <article class="result-card tags-card">
+          <div class="card-heading"><div><span>02</span><h3>13 Etsy Tags</h3></div><button class="copy-btn" data-copy="tags-copy">Copy all</button></div>
+          <p id="tags-copy" class="hidden-copy"></p>
+          <div id="tags-output" class="tag-cloud"></div>
+        </article>
+
+        <article class="result-card analysis-card">
+          <div class="card-heading"><div><span>03</span><h3>Design Read</h3></div></div>
+          <div class="analysis-lines"><div><small>Subject</small><strong id="design-subject"></strong></div><div><small>Detected text</small><strong id="detected-text"></strong></div><div><small>Themes</small><strong id="design-themes"></strong></div></div>
+        </article>
+
+        <article class="result-card personalization-card" id="personalization-card" hidden>
+          <div class="card-heading"><div><span>04</span><h3>Personalization</h3></div><button class="copy-btn" data-copy="personalization-copy">Copy</button></div>
+          <div class="personalization-grid">
+            <div><small>Changes that can be made</small><ul id="personalization-options"></ul></div>
+            <div class="instruction-box"><small>Etsy personalization field</small><p id="personalization-instruction"></p></div>
+          </div>
+          <p id="personalization-copy" class="hidden-copy"></p>
+        </article>
+
+        <article class="result-card warning-card" id="warning-card" hidden>
+          <div class="card-heading"><div><span>!</span><h3>Review Before Publishing</h3></div></div>
+          <ul id="warning-list"></ul>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast">Copied</div>
+
+  <footer class="footer">
+    <img src="/static/seektec-logo.png" alt="Seektec">
+    <p>Seektec · Your Partner in Digital Growth</p>
+    <strong>Made by Adan Waheed</strong>
+  </footer>
+</body>
+</html>

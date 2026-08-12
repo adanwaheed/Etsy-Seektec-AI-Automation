@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "index.py": {
+      "maxDuration": 300,
+      "includeFiles": "{app/**,templates/**,static/**}",
+      "excludeFiles": "{tests/**,.venv/**,**/__pycache__/**,**/*.pyc,start.bat,test_gemini_key.py}"
+    }
+  }
+}
