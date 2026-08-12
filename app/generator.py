@@ -14,12 +14,111 @@ from .gemini_client import (
     generate_content_with_fallback,
 )
 from .prompts import REPAIR_PROMPT, SYSTEM_PROMPT
-from .schemas import PODListingDraft
+from .schemas import PODListingDraft, PersonalizationField
 from .validators import validate_listing
 
 
 class PODGenerationError(RuntimeError):
     """Raised when Gemini cannot generate a valid POD listing."""
+
+
+def _normalize_personalization(
+    listing: PODListingDraft,
+    personalization: str,
+    decoration_method: str,
+) -> PODListingDraft:
+    """Apply deterministic Etsy-style field naming and safe limits after Gemini output."""
+
+    if personalization.strip().lower() != "yes":
+        listing.personalization_fields = []
+        listing.personalization_summary = ""
+        return listing
+
+    title_map = {
+        "name": "Provide Name",
+        "initials": "Provide Initials",
+        "monogram": "Provide Monogram",
+        "number": "Provide Number",
+        "date": "Provide Date / Year",
+        "year": "Provide Date / Year",
+        "text": "Provide Custom Text",
+    }
+    examples = {
+        "name": "E.g: Adan",
+        "initials": "E.g: AW",
+        "monogram": "E.g: AWA",
+        "number": "E.g: 24",
+        "date": "E.g: 2026",
+        "year": "E.g: 2026",
+        "text": "E.g: Custom Text",
+    }
+    expected_color_title = (
+        "Choose Embroidery Thread Colors"
+        if decoration_method.strip().lower() == "embroidery"
+        else "Choose Print Colors"
+    )
+
+    normalized: list[PersonalizationField] = []
+    color_field: PersonalizationField | None = None
+
+    for field in listing.personalization_fields:
+        kind = (field.detected_type or "text").strip().lower()
+        if kind == "color" or "color" in field.field_title.lower():
+            if color_field is None:
+                instructions = field.instructions.strip()
+                if not instructions.startswith("E.g:"):
+                    instructions = "E.g:\n" + instructions
+                color_field = PersonalizationField(
+                    field_title=expected_color_title,
+                    instructions=instructions[:120].rstrip(),
+                    required=True,
+                    detected_type="color",
+                )
+            continue
+
+        if len(normalized) >= 4:  # Etsy allows 5 total; reserve one field for colors.
+            continue
+        canonical = title_map.get(kind, field.field_title.strip() or "Provide Custom Text")
+        instruction = field.instructions.strip() or examples.get(kind, "E.g: Custom Text")
+        normalized.append(
+            PersonalizationField(
+                field_title=canonical[:45].rstrip(),
+                instructions=instruction[:120].rstrip(),
+                required=True,
+                detected_type=kind,
+            )
+        )
+
+    if color_field is None:
+        labels: list[str] = []
+        for field in normalized:
+            kind = field.detected_type.lower()
+            labels.append({
+                "name": "Name",
+                "initials": "Initials",
+                "monogram": "Monogram",
+                "number": "Number",
+                "date": "Date",
+                "year": "Year",
+                "text": "Text",
+            }.get(kind, "Text"))
+        if "Main Graphic" not in labels:
+            labels.append("Main Graphic")
+        sample_colors = ["Red", "White", "Purple", "Black"]
+        lines = ["E.g:"] + [f"{label} ({sample_colors[i % len(sample_colors)]})" for i, label in enumerate(labels[:4])]
+        instructions = "\n".join(lines)
+        color_field = PersonalizationField(
+            field_title=expected_color_title,
+            instructions=instructions[:120].rstrip(),
+            required=True,
+            detected_type="color",
+        )
+
+    normalized.append(color_field)
+    listing.personalization_fields = normalized[:5]
+    if not listing.personalization_summary.strip():
+        listing.personalization_summary = "Detected editable design elements and matched buyer input fields."
+    return listing
 
 
 def _parse(response: object) -> PODListingDraft:
@@ -94,8 +193,8 @@ def generate_pod_listing(
                 ),
             ),
         )
-        listing = _parse(result.response)
-        report = validate_listing(listing, personalization)
+        listing = _normalize_personalization(_parse(result.response), personalization, decoration_method)
+        report = validate_listing(listing, personalization, decoration_method)
 
         if report.errors:
             repair = generate_content_with_fallback(
@@ -115,7 +214,7 @@ def generate_pod_listing(
                     ),
                 ),
             )
-            listing = _parse(repair.response)
+            listing = _normalize_personalization(_parse(repair.response), personalization, decoration_method)
 
         return listing
     except PODGenerationError:

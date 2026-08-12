@@ -39,8 +39,8 @@ SUPPORTED_METHODS = {"Print", "Embroidery"}
 
 app = FastAPI(
     title="Seektec POD Etsy Listing Studio",
-    version="1.0.0",
-    description="AI-assisted Etsy title, tag, and personalization generator for Seektec POD apparel.",
+    version="2.0.0",
+    description="AI-assisted Etsy title, tag, and Etsy-style customization generator for Seektec POD apparel.",
 )
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
@@ -114,7 +114,7 @@ async def generate(
             occasion_theme=occasion_theme,
             notes=notes,
         )
-        report = validate_listing(listing, personalization)
+        report = validate_listing(listing, personalization, decoration_method)
         return JSONResponse(
             {
                 "listing": listing.model_dump(),
